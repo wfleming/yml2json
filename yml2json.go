@@ -57,20 +57,20 @@ func printUsage() {
 }
 
 func yamlToJSON(yml interface{}) ([]byte, error) {
+	sanitized, err := sanitizeYaml(yml)
+	if nil != err {
+		return nil, err
+	}
+	return json.Marshal(sanitized)
+}
+
+func sanitizeYaml(yml interface{}) (interface{}, error) {
 	if arrYaml, ok := yml.([]interface{}); ok {
-		sanitized, err := sanitizeYamlArr(arrYaml)
-		if nil != err {
-			return nil, err
-		}
-		return json.Marshal(sanitized)
+		return sanitizeYamlArr(arrYaml)
 	} else if mapYaml, ok := yml.(map[interface{}]interface{}); ok {
-		sanitized, err := sanitizeYamlMap(mapYaml)
-		if nil != err {
-			return nil, err
-		}
-		return json.Marshal(sanitized)
+		return sanitizeYamlMap(mapYaml)
 	} else {
-		return nil, fmt.Errorf("Unexpected type of YAML: %T", yml)
+		return yml, nil
 	}
 }
 
@@ -78,15 +78,11 @@ func sanitizeYamlArr(yml []interface{}) ([]interface{}, error) {
 	sanitized := make([]interface{}, len(yml))
 
 	for idx, val := range yml {
-		if mapVal, ok := val.(map[interface{}]interface{}); ok {
-			sanitizedMapVal, err := sanitizeYamlMap(mapVal)
-			if nil != err {
-				return nil, err
-			}
-			sanitized[idx] = sanitizedMapVal
-		} else {
-			sanitized[idx] = val
+		sanitizedVal, err := sanitizeYaml(val)
+		if nil != err {
+			return nil, err
 		}
+		sanitized[idx] = sanitizedVal
 	}
 
 	return sanitized, nil
@@ -102,15 +98,12 @@ func sanitizeYamlMap(yml map[interface{}]interface{}) (map[string]interface{}, e
 		} else {
 			strKey = fmt.Sprintf("%v", key)
 		}
-		if mapVal, ok := val.(map[interface{}]interface{}); ok {
-			sanitizedMapVal, err := sanitizeYamlMap(mapVal)
-			if nil != err {
-				return nil, err
-			}
-			sanitized[strKey] = sanitizedMapVal
-		} else {
-			sanitized[strKey] = val
+
+		sanitizedVal, err := sanitizeYaml(val)
+		if err != nil {
+			return nil, err
 		}
+		sanitized[strKey] = sanitizedVal
 	}
 
 	return sanitized, nil
