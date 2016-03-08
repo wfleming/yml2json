@@ -8,7 +8,8 @@ fi
 
 version=$1
 
-printf "package main\n\nconst version = \"%s\"" "$version"
+printf "package main\n\nconst version = \"%s\"" "$version" > version.go
+git commit version.go -m "version $version"
 make build/yml2json build/yml2json-linux
 
 darwin_bin="build/yml2json.${version}.darwin-amd64"
