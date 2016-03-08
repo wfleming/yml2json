@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+
+if [ -z "$1" ]; then
+  echo "usage: bin/gh-release VERSION" >&2
+  exit 64
+fi
+
+version=$1
+
+printf "package main\n\nconst version = \"%s\"" "$version"
+make build/yml2json build/yml2json-linux
+
+darwin_bin="build/yml2json.${version}.darwin-amd64"
+linux_bin="build/yml2json.${version}.linux-amd64"
+mv build/yml2json "$darwin_bin"
+mv build/yml2json-linux "$linux_bin"
+
+hub release create -a "$darwin_bin" -a "$linux_bin" -m "Release $version" "$version"
